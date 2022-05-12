@@ -8,38 +8,27 @@ class Test:
     コンパイルおよび実行を行うクラス
     """
 
-    # TODO コンストラクタの引数にDirectory型の変数を取ることで、余計な変数の生成を防ぎたい。
-    # self.main_file_dirなどはすでにDirectoryクラスのインスタンスで生成された変数であるので、わざわざ、このTestクラスでも同じ変数を用意する必要はない。
     def __init__(
         self,
-        workspace_dir: str,
-        package_name: str,
-        etc_dir: str = "etc",
-        main_file_dir: str = "main_file",
+        dir: Directory,
+        # javacでのコンパイル時やjavaでの実行時にどんな引数で実行したのか表示するかどうか
         OUTPUT_COMMAND_DETAIL: bool = True,
     ):
-        self.workspace_dir = workspace_dir
-        self.package_name = package_name
-        self.root_path = os.path.join(self.workspace_dir, self.package_name)
-
-        self.main_file_dir = os.path.join(etc_dir, main_file_dir)
-
+        self.dir = dir
         self.COMPILE_COMMAND = "javac"
         self.EXE_COMMAND = "java"
         self.ENCODING = "UTF8"
         self.OUTPUT_DETAIL_COMMAND = OUTPUT_COMMAND_DETAIL
 
     def test_all_file(self) -> None:
-        elapsed_files = Directory.get_all_file(
-            os.path.join(self.root_path, self.main_file_dir)
-        )
-        for pathname, dirnames, filenames in os.walk(self.root_path):
-            if len(dirnames) == 1 and self.package_name in dirnames:
+        elapsed_files = Directory.get_all_file(self.dir.main_file_path)
+        for pathname, dirnames, filenames in os.walk(self.dir.root_path):
+            if len(dirnames) == 1 and self.dir.package_name in dirnames:
                 self.test_file(pathname, elapsed_files[0], output_file="result.txt")
 
     def test_file(self, pathname: str, elapsed_file: str, output_file=None) -> None:
         compile_status = self.compile_file(
-            os.path.join(pathname, self.package_name, elapsed_file),
+            os.path.join(pathname, self.dir.package_name, elapsed_file),
             classpath=pathname,
         )
 
@@ -48,7 +37,7 @@ class Test:
             return
 
         exe_status = self.execute_file(
-            os.path.join(self.package_name, os.path.splitext(elapsed_file)[0]),
+            os.path.join(self.dir.package_name, os.path.splitext(elapsed_file)[0]),
             classpath=pathname,
             output_dir=pathname,
             output_file=output_file,
