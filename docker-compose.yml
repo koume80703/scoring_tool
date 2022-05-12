@@ -1,0 +1,10 @@
+version: '3'
+services:
+  java_python:
+    restart: always
+    build: .
+    image: java_python3_env
+    container_name: 'java_python3'
+    tty: true
+    volumes:
+      - ./src:/root/src
