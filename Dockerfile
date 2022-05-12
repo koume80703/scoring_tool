@@ -1,4 +1,3 @@
-# FROM python:3
 FROM openjdk:11-slim
 
 LABEL maintainer="kohei_lab"
@@ -10,11 +9,11 @@ ENV TERM="xterm-color"
 
 RUN apt-get update
 RUN apt-get install -y python3 python3-pip
-RUN apt-get install -y nkf
+RUN apt-get install -y git
 
-RUN mkdir -p /root/src
-COPY requirements.txt /root/src
-WORKDIR /root/src
+RUN mkdir -p /home/
+COPY requirements.txt /home/
+WORKDIR /home/
 
 RUN python3 -m pip install --upgrade pip
 RUN python3 -m pip install --upgrade setuptools
