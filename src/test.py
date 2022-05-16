@@ -34,6 +34,9 @@ class Test:
 
         if compile_status == 1:
             print("<javac> was failed. Compile Error.")
+            if output_file is not None:
+                with open(os.path.join(pathname, output_file), "w") as txt:
+                    txt.writelines(["error"])
             return
 
         exe_status = self.execute_file(
