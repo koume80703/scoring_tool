@@ -25,7 +25,8 @@
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
 		"oderwat.indent-rainbow",
-		"ms-python.python"
+		"ms-python.python",
+		"redhat.java"
 	]
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
