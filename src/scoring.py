@@ -4,6 +4,7 @@ import sys
 
 from typing import Optional
 
+from search import Search
 from directory import Directory
 from excel import Excel
 from test import Test
@@ -14,18 +15,17 @@ class Scoring:
     学生が提出したファイルを実行し、得られた出力を正しい出力結果と比較し、採点を行うクラス。
     """
 
-    # root_pathはsrcディレクトリの親ディレクトリを指定する。
-    # lecture_nameは採点対象の講義名を"javalecXX"の形で指定する。
-    # correct_result_dirは正しい出力結果のおいてあるディレクトリ名を指定する。
-
-    # TODO コンストラクタの引数にDirectory型の変数を取ることで、余計な変数の生成を防ぎたい。
-    # self.main_file_dirなどはすでにDirectoryクラスのインスタンスで生成された変数であるので、わざわざ、このTestクラスでも同じ変数を用意する必要はない。
     def __init__(
         self,
         dir: Directory,
     ):
         self.dir = dir
-        xls_file = Directory.get_all_file(self.dir.xls_path)[1]
+
+        xls_files = Directory.get_all_file(self.dir.xls_path)[1]
+        for xf in xls_files:
+            if os.path.splitext(os.path.basename(xf)[1]) == ".xlsx":
+                xls_file = xf
+
         self.excel = Excel(os.path.join(self.dir.xls_path, xls_file))
 
     def comp_all_result(self) -> None:
@@ -37,6 +37,8 @@ class Scoring:
         # self.dir.lecture_nameを用いても問題はない
         package_name = self.dir.lecture_name
         result_file_name = "result.txt"
+        print()
+        print("***** Comparing all files *****")
         for pathname, dirnames, filenames in os.walk(self.dir.root_path):
             if len(dirnames) == 1 and package_name in dirnames:
                 self.comp_result(
@@ -131,16 +133,37 @@ def main():
     # TODO src以外の場所において実行したとしてもうまく実行できるようにしたい。
     workspace_path = os.path.dirname(os.getcwd())
 
+    dir = Directory(workspace_path, lecture_name)
+    dir.tidy_dir()
+
     if len(sys.argv) != 1:
         if sys.argv[1] == "-t":
             student_num = sys.argv[2]
-            dir = Directory(workspace_path, lecture_name)
+
+            search = Search(dir)
+            for pattern_file in dir.illegal_patterns:
+                with open(
+                    os.path.join(dir.illegal_patterns_path, pattern_file), "r"
+                ) as p:
+                    patterns = p.read().splitlines()
+
+                search.search_text(
+                    os.path.join(
+                        dir.root_path,
+                        student_num,
+                        dir.package_name,
+                        dir.main_file[0],
+                    ),
+                    patterns,
+                )
+
             test = Test(dir)
-            elapsed_files = Directory.get_all_file(dir.main_file_path)
-            test.test_file(os.path.join(test.root_path, student_num), elapsed_files[0])
+            test.test_file(
+                os.path.join(test.dir.root_path, student_num), dir.main_file[0]
+            )
     else:
-        dir = Directory(workspace_path, lecture_name)
-        dir.tidy_dir()
+        search = Search(dir)
+        search.search_all_file()
 
         test = Test(dir)
         test.test_all_file()

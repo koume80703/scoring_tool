@@ -19,6 +19,7 @@ class Directory:
         main_file_dir: str = "main_file",
         correct_result_dir: str = "correct_result",
         diff_result_dir: str = "diff_result",
+        illegal_patterns_dir: str = "illegal_patterns",
         xls_dir: str = "xls_file",
     ):
         self.workspace_path = workspace_path
@@ -34,6 +35,7 @@ class Directory:
         self.main_file_path = os.path.join(self.etc_path, main_file_dir)
         self.correct_result_path = os.path.join(self.etc_path, correct_result_dir)
         self.diff_result_path = os.path.join(self.etc_path, diff_result_dir)
+        self.illegal_patterns_path = os.path.join(self.etc_path, illegal_patterns_dir)
         self.xls_path = os.path.join(self.etc_path, xls_dir)
 
     def tidy_dir(self) -> None:
@@ -52,43 +54,13 @@ class Directory:
             print("Run this program again.")
             sys.exit(1)
 
-        if self.is_exist_dir(self.xls_path):
-            if not self.get_all_file(self.xls_path):
-                print('Place the excel file in "xls_file" directory.')
-                sys.exit(1)
-        else:
-            Process.make_directory(self.xls_path)
-            print('make directory "xls_file"')
-
         # 実行に必要な他ファイル名を保存する。
         self.necessary_files = []
         if self.is_exist_dir(self.necessary_path):
-            self.necessary_files = self.get_all_file(self.necessary_path)
+            self.necessary_files = Directory.get_all_file(self.necessary_path)
         else:
             Process.make_directory(self.necessary_path)
             print('make directory "necessary_files"')
-
-        # 実行ファイル名（メインクラスのあるファイル名)を保存する。
-        # リストで保存する必要はないかもしれない。
-        self.main_file = []
-        if self.is_exist_dir(self.main_file_path):
-            self.main_file = self.get_all_file(self.main_file_path)
-        else:
-            Process.make_directory(self.main_file_path)
-            print('make directory "main_file"')
-            print('Place the main file in "main_file" directory.')
-            sys.exit(1)
-
-        # 比較対象の正しい出力結果がない場合、プログラム終了
-        if self.is_exist_dir(self.correct_result_path):
-            if not self.get_all_file(self.correct_result_path):
-                print('Place the correct result file in "correct_result" directory.')
-                sys.exit(1)
-        else:
-            Process.make_directory(self.correct_result_path)
-            print('make directory "correct_result_dir"')
-            print('Place the correct result file in "correct_result" directory.')
-            sys.exit(1)
 
         # 比較結果の出力先ディレクトリがない場合、作成する。
         if self.is_exist_dir(self.diff_result_path):
@@ -97,14 +69,54 @@ class Directory:
             Process.make_directory(self.diff_result_path)
             print('make directory "diff_result"')
 
+        self.illegal_patterns = []
+        if self.is_exist_dir(self.illegal_patterns_path):
+            self.illegal_patterns = Directory.get_all_file(self.illegal_patterns_path)
+        else:
+            Process.make_directory(self.illegal_patterns_path)
+            print('make directory "illegal_patterns"')
+
+        # 実行ファイル名（メインクラスのあるファイル名)を保存する。
+        # リストで保存する必要はないかもしれない。
+        self.main_file = []
+        if self.is_exist_dir(self.main_file_path):
+            self.main_file = Directory.get_all_file(self.main_file_path)
+        else:
+            Process.make_directory(self.main_file_path)
+            print('make directory "main_file"')
+            print('Place the main file in "main_file" directory.')
+            sys.exit(1)
+
+        # 比較対象の正しい出力結果がない場合、プログラム終了
+        if self.is_exist_dir(self.correct_result_path):
+            if not Directory.get_all_file(self.correct_result_path):
+                print('Place the correct result file in "correct_result" directory.')
+                sys.exit(1)
+        else:
+            Process.make_directory(self.correct_result_path)
+            print('make directory "correct_result_dir"')
+            print('Place the correct result file in "correct_result" directory.')
+            sys.exit(1)
+
+        if self.is_exist_dir(self.xls_path):
+            if not Directory.get_all_file(self.xls_path):
+                print('Place the excel file in "xls_file" directory.')
+                sys.exit(1)
+        else:
+            Process.make_directory(self.xls_path)
+            print('make directory "xls_file"')
+            print('Place the excel file in "xls_file" directory.')
+            sys.exit(1)
+
         if self.is_exist_dir(self.root_path):
-            java_files = self.get_all_file(self.root_path)
+            java_files = Directory.get_all_file(self.root_path)
             for f in java_files:
                 file_name = os.path.splitext(os.path.basename(f))[0]
 
                 # macにおいて.DS_Storeというファイルが生成されることがあり、これを処理の対象外とするための処理
                 extension = os.path.splitext(os.path.basename(f))[1]
                 if extension != ".java":
+                    print("Illegal file type:", os.path.basename(f))
                     continue
 
                 # パッケージ上部のディレクトリ名を"学年_組_番号"とした
@@ -155,11 +167,12 @@ class Directory:
         """
         return os.path.isdir(path)
 
-    def reset_directory(self) -> int:
+    def reset_directory(self) -> None:
         """
         root_path以下の全てのディレクトリを削除し、全てのファイルをroot_path以下に配置する。
         主にデバック時に用いるメソッド。
         """
+
         for pathname, dirnames, filenames in os.walk(self.root_path):
             if not self.is_student_dir(pathname):
                 continue
@@ -212,6 +225,8 @@ class Directory:
         if path == self.etc_path:
             return False
         if path == self.main_file_path:
+            return False
+        if path == self.illegal_patterns_path:
             return False
 
         return True

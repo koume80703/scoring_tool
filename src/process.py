@@ -55,3 +55,23 @@ class Process:
             cmd = ["rm", option, path]
 
         return run(args=cmd).returncode
+
+    @classmethod
+    def grep(cls, path: str, pattern: str, option: str = None) -> int:
+        if option is None:
+            cmd = ["grep", pattern, path]
+        else:
+            cmd = ["grep", option, pattern, path]
+
+        return run(args=cmd).returncode
+
+    @classmethod
+    def grep_pipe(cls, path, patterns: list[str]) -> int:
+        cmd = "grep"
+        cmd += " " + patterns[0] + " " + path
+        for i in range(1, len(patterns)):
+            cmd += " | grep " + patterns[i]
+
+        print(cmd)
+
+        return run(args=cmd, shell=True).returncode

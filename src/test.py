@@ -21,10 +21,13 @@ class Test:
         self.OUTPUT_DETAIL_COMMAND = OUTPUT_COMMAND_DETAIL
 
     def test_all_file(self) -> None:
-        elapsed_files = Directory.get_all_file(self.dir.main_file_path)
+        print()
+        print("***** Testing all files *****")
         for pathname, dirnames, filenames in os.walk(self.dir.root_path):
             if len(dirnames) == 1 and self.dir.package_name in dirnames:
-                self.test_file(pathname, elapsed_files[0], output_file="result.txt")
+                self.test_file(
+                    pathname, self.dir.main_file[0], output_file="result.txt"
+                )
 
     def test_file(self, pathname: str, elapsed_file: str, output_file=None) -> None:
         compile_status = self.compile_file(
