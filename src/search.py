@@ -22,21 +22,29 @@ class Search:
                     with open(
                         os.path.join(self.dir.illegal_patterns_path, pattern_file), "r"
                     ) as p:
-                        patterns = p.read().splitlines()
+                        lines = p.read().splitlines()
+                        [option, pattern] = lines[0].split(",")
                         self.search_text(
                             os.path.join(
                                 pathname, self.dir.package_name, self.dir.main_file[0]
                             ),
-                            patterns,
+                            [pattern],
                             output_file="result.txt",
+                            option=option,
                         )
 
-    def search_text(self, path: str, patterns: str, output_file=None) -> None:
-        grep_status = Process.grep_pipe(path, patterns)
+    def search_text(
+        self, path: str, patterns: list[str], output_file=None, option=None
+    ) -> None:
+        if len(patterns) == 1:
+            pattern = patterns[0]
+            grep_status = Process.grep(path, pattern, option=option)
+        else:
+            grep_status = Process.grep_pipe(path, patterns)
 
         if grep_status == 0:
             print("Illegal pattern was discovered.")
             if output_file is not None:
-                with open(os.path.join(path, output_file), "w") as txt:
+                with open(os.path.join(os.path.dirname(path), output_file), "w") as txt:
                     txt.writelines(["error"])
             return

@@ -63,6 +63,11 @@ class Process:
         else:
             cmd = ["grep", option, pattern, path]
 
+        for arg in cmd:
+            print(arg, end=" ")
+        else:
+            print()
+
         return run(args=cmd).returncode
 
     @classmethod
@@ -75,3 +80,16 @@ class Process:
         print(cmd)
 
         return run(args=cmd, shell=True).returncode
+
+    @classmethod
+    def nkf(cls, path, ctype: str = "utf-8") -> int:
+        if ctype == "utf-8":
+            cmd = ["nkf", "-w", "--overwrite", path]
+        else:
+            pass
+
+        for arg in cmd:
+            print(arg, end=" ")
+        print()
+
+        return run(args=cmd).returncode

@@ -8,6 +8,7 @@ from search import Search
 from directory import Directory
 from excel import Excel
 from test import Test
+from nkf import Nkf
 
 
 class Scoring:
@@ -21,9 +22,9 @@ class Scoring:
     ):
         self.dir = dir
 
-        xls_files = Directory.get_all_file(self.dir.xls_path)[1]
+        xls_files = Directory.get_all_file(self.dir.xls_path)
         for xf in xls_files:
-            if os.path.splitext(os.path.basename(xf)[1]) == ".xlsx":
+            if os.path.splitext(os.path.basename(xf))[1] == ".xlsx":
                 xls_file = xf
 
         self.excel = Excel(os.path.join(self.dir.xls_path, xls_file))
@@ -162,6 +163,9 @@ def main():
                 os.path.join(test.dir.root_path, student_num), dir.main_file[0]
             )
     else:
+        nkf = Nkf(dir)
+        nkf.encoding_all_file()
+
         search = Search(dir)
         search.search_all_file()
 
