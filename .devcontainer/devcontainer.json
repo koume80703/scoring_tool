@@ -26,7 +26,9 @@
 	"extensions": [
 		"oderwat.indent-rainbow",
 		"ms-python.python",
-		"redhat.java"
+		"redhat.java",
+		"vscjava.vscode-maven",
+		"vscjava.vscode-java-dependency"
 	]
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
