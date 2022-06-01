@@ -9,7 +9,7 @@ ENV TERM="xterm-color"
 
 RUN apt-get update
 RUN apt-get install -y python3 python3-pip
-RUN apt-get install -y git
+RUN apt-get install -y git nkf
 
 RUN mkdir -p /home/
 COPY requirements.txt /home/
