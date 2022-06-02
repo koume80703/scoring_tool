@@ -146,7 +146,8 @@ def main():
                 with open(
                     os.path.join(dir.illegal_patterns_path, pattern_file), "r"
                 ) as p:
-                    patterns = p.read().splitlines()
+                    lines = p.read().splitlines()
+                    [option, pattern] = lines[0].split(",")
 
                 search.search_text(
                     os.path.join(
@@ -155,7 +156,8 @@ def main():
                         dir.package_name,
                         dir.main_file[0],
                     ),
-                    patterns,
+                    [pattern],
+                    option=option,
                 )
 
             test = Test(dir)
