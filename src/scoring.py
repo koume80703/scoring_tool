@@ -66,15 +66,17 @@ class Scoring:
             os.path.join(self.dir.diff_result_path, output_file),
         )
 
+        ek = ["compile error", "execution error", "grep error"]
+
         with open(result_path, "r") as result_text:
             result_text_lines = result_text.readlines()
-        if len(result_text_lines) > 0 and result_text_lines[0] == "error":
-            with open(output_path, "w") as f:
-                print(identity_num, "error")
-                f.writelines(["error"])
+        if len(result_text_lines) > 0:
+            for i in range(len(ek)):
+                if result_text_lines[0] == ek[i]:
+                    with open(output_path, "w") as f:
+                        print(identity_num, ek[i])
+                        f.writelines(ek[i])
         else:
-            # 比較した結果、出力結果が一致していなければ、htmlDiffを用いて比較結果のファイルをhtml形式で出力する。
-            # TODO 比較結果が一致不一致によって出力ファイルの形式がテキストかhtmlか変わっており、統一性がないのをなんとかしたい。
             correct_result_text_list = Directory.get_all_file(
                 self.dir.correct_result_path
             )
@@ -165,19 +167,15 @@ def main():
                 os.path.join(test.dir.root_path, student_num), dir.main_file[0]
             )
     else:
-        nkf = Nkf(dir)
-        nkf.encoding_all_file()
+        Nkf(dir).encoding_all_file()
 
-        search = Search(dir)
-        search.search_all_file()
+        Search(dir).search_all_file()
 
-        test = Test(dir)
-        test.test_all_file()
+        Test(dir).test_all_file()
 
         Directory.remove_classes(dir.root_path)
 
-        scoring = Scoring(dir)
-        scoring.scoring()
+        Scoring(dir).scoring()
 
 
 if __name__ == "__main__":

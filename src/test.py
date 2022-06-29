@@ -39,7 +39,7 @@ class Test:
             print("<javac> was failed. Compile Error.")
             if output_file is not None:
                 with open(os.path.join(pathname, output_file), "w") as txt:
-                    txt.writelines(["error"])
+                    txt.writelines(["compile error"])
             return
 
         exe_status = self.execute_file(
@@ -53,7 +53,7 @@ class Test:
             print("<java> was failed. Execution Error.")
             if output_file is not None:
                 with open(os.path.join(pathname, output_file), "w") as txt:
-                    txt.writelines(["error"])
+                    txt.writelines(["execution error"])
             return
 
     def compile_file(self, path: str, classpath: str) -> int:

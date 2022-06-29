@@ -70,16 +70,16 @@ class Process:
 
         return run(args=cmd).returncode
 
-    @classmethod
-    def grep_pipe(cls, path, patterns: list[str]) -> int:
-        cmd = "grep"
-        cmd += " " + patterns[0] + " " + path
-        for i in range(1, len(patterns)):
-            cmd += " | grep " + patterns[i]
+    # @classmethod
+    # def grep_pipe(cls, path, patterns: list[str]) -> int:
+    #     cmd = "grep"
+    #     cmd += " " + patterns[0] + " " + path
+    #     for i in range(1, len(patterns)):
+    #         cmd += " | grep " + patterns[i]
 
-        print(cmd)
+    #     print(cmd)
 
-        return run(args=cmd, shell=True).returncode
+    #     return run(args=cmd, shell=True).returncode
 
     @classmethod
     def nkf(cls, path, ctype: str = "utf-8") -> int:

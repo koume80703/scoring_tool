@@ -28,23 +28,19 @@ class Search:
                             os.path.join(
                                 pathname, self.dir.package_name, self.dir.main_file[0]
                             ),
-                            [pattern],
+                            pattern,
                             output_file="result.txt",
                             option=option,
                         )
 
     def search_text(
-        self, path: str, patterns: list[str], output_file=None, option=None
+        self, path: str, pattern: str, output_file=None, option=None
     ) -> None:
-        if len(patterns) == 1:
-            pattern = patterns[0]
-            grep_status = Process.grep(path, pattern, option=option)
-        else:
-            grep_status = Process.grep_pipe(path, patterns)
+        grep_status = Process.grep(path, pattern, option=option)
 
         if grep_status == 0:
             print("Illegal pattern was discovered.")
             if output_file is not None:
                 with open(os.path.join(os.path.dirname(path), output_file), "w") as txt:
-                    txt.writelines(["error"])
+                    txt.writelines(["grep error"])
             return
