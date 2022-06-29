@@ -90,6 +90,7 @@ class Process:
 
         for arg in cmd:
             print(arg, end=" ")
-        print()
+        else:
+            print()
 
         return run(args=cmd).returncode

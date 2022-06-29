@@ -5,6 +5,11 @@ import os
 
 
 class Nkf:
+    """
+    文字コードをutf-8に変更するクラス。
+    utf-8以外に変更することも可能なはず。
+    """
+
     def __init__(self, dir: Directory):
         self.dir = dir
 
