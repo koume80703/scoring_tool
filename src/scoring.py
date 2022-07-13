@@ -70,7 +70,7 @@ class Scoring:
 
         with open(result_path, "r") as result_text:
             result_text_lines = result_text.readlines()
-        if len(result_text_lines) > 0:
+        if result_text_lines[0] in ek:
             for i in range(len(ek)):
                 if result_text_lines[0] == ek[i]:
                     with open(output_path, "w") as f:
@@ -149,7 +149,14 @@ def main():
                     os.path.join(dir.illegal_patterns_path, pattern_file), "r"
                 ) as p:
                     lines = p.read().splitlines()
-                    [option, pattern] = lines[0].split(",")
+
+                opi = lines[0].split(",")
+                if len(opi) == 2:
+                    [option, pattern] = opi
+                    inverse = 0
+                elif len(opi) == 3:
+                    [option, pattern, inverse] = opi
+                    inverse = int(inverse)
 
                 search.search_text(
                     os.path.join(
@@ -158,8 +165,9 @@ def main():
                         dir.package_name,
                         dir.main_file[0],
                     ),
-                    [pattern],
+                    pattern,
                     option=option,
+                    inverse=inverse,
                 )
 
             test = Test(dir)

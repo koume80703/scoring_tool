@@ -23,24 +23,38 @@ class Search:
                         os.path.join(self.dir.illegal_patterns_path, pattern_file), "r"
                     ) as p:
                         lines = p.read().splitlines()
-                        [option, pattern] = lines[0].split(",")
-                        self.search_text(
-                            os.path.join(
-                                pathname, self.dir.package_name, self.dir.main_file[0]
-                            ),
-                            pattern,
-                            output_file="result.txt",
-                            option=option,
-                        )
+
+                    opi = lines[0].split(",")
+                    if len(opi) == 2:
+                        [option, pattern] = opi
+                        inverse = 0
+                    elif len(opi) == 3:
+                        [option, pattern, inverse] = opi
+                        inverse = int(inverse)
+                    self.search_text(
+                        os.path.join(
+                            pathname, self.dir.package_name, self.dir.main_file[0]
+                        ),
+                        pattern,
+                        output_file="result.txt",
+                        option=option,
+                        inverse=inverse,
+                    )
 
     def search_text(
-        self, path: str, pattern: str, output_file=None, option=None
+        self, path: str, pattern: str, output_file=None, option=None, inverse=0
     ) -> None:
-        grep_status = Process.grep(path, pattern, option=option)
+        grep_status = Process.grep(path, pattern, option=option) - inverse
 
         if grep_status == 0:
-            print("Illegal pattern was discovered.")
+            if inverse == 1:
+                print("<< Required pattern was NOT discovered. >>")
+            else:
+                print("<< Illegal pattern was discovered. >>")
             if output_file is not None:
-                with open(os.path.join(os.path.dirname(path), output_file), "w") as txt:
+                with open(
+                    os.path.join(os.path.dirname(os.path.dirname(path)), output_file),
+                    "w",
+                ) as txt:
                     txt.writelines(["grep error"])
             return

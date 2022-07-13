@@ -30,6 +30,13 @@ class Test:
                 )
 
     def test_file(self, pathname: str, elapsed_file: str, output_file=None) -> None:
+        if output_file is not None:
+            with open(os.path.join(pathname, output_file), "r") as txt:
+                output = txt.read().splitlines()
+            if len(output) > 0 and output[0] == "grep error":
+                print("<< Skipped testing >>")
+                return
+
         compile_status = self.compile_file(
             os.path.join(pathname, self.dir.package_name, elapsed_file),
             classpath=pathname,

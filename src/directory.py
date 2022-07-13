@@ -54,57 +54,56 @@ class Directory:
             print("Run this program again.")
             sys.exit(1)
 
-        # 実行に必要な他ファイル名を保存する。
-        self.necessary_files = []
-        if self.is_exist_dir(self.necessary_path):
-            self.necessary_files = Directory.get_all_file(self.necessary_path)
-        else:
+        # サブファイルのディレクトリが無い場合、作成する。
+        if not self.is_exist_dir(self.necessary_path):
             Process.make_directory(self.necessary_path)
             print('make directory "necessary_files"')
 
         # 比較結果の出力先ディレクトリがない場合、作成する。
-        if self.is_exist_dir(self.diff_result_path):
-            pass
-        else:
+        if not self.is_exist_dir(self.diff_result_path):
             Process.make_directory(self.diff_result_path)
             print('make directory "diff_result"')
 
-        self.illegal_patterns = []
-        if self.is_exist_dir(self.illegal_patterns_path):
-            self.illegal_patterns = Directory.get_all_file(self.illegal_patterns_path)
-        else:
+        # grep用のパターンディレクトリが無い場合、作成する。
+        if not self.is_exist_dir(self.illegal_patterns_path):
             Process.make_directory(self.illegal_patterns_path)
             print('make directory "illegal_patterns"')
 
-        # 実行ファイル名（メインクラスのあるファイル名)を保存する。
-        # リストで保存する必要はないかもしれない。
-        self.main_file = []
-        if self.is_exist_dir(self.main_file_path):
-            self.main_file = Directory.get_all_file(self.main_file_path)
-        else:
+        # 実行ファイル名のあるディレクトリが無い場合、作成する。
+        if not self.is_exist_dir(self.main_file_path):
             Process.make_directory(self.main_file_path)
             print('make directory "main_file"')
+
+        # 正しい出力のディレクトリが無い場合、作成する。
+        if not self.is_exist_dir(self.correct_result_path):
+            Process.make_directory(self.correct_result_path)
+            print('make directory "correct_result_dir"')
+
+        # xlsファイルのあるディレクトリが無い場合、作成する。
+        if not self.is_exist_dir(self.xls_path):
+            Process.make_directory(self.xls_path)
+            print('make directory "xls_file"')
+
+        # 実行に必要な他ファイル名を保存する。
+        self.necessary_files = Directory.get_all_file(self.necessary_path)
+
+        # grepにて検出したいパターンを保存する。
+        self.illegal_patterns = Directory.get_all_file(self.illegal_patterns_path)
+
+        # 実行ファイル名（メインクラスのあるファイル名)を保存する。
+        # リストで保存する必要はないかもしれない。
+        self.main_file = Directory.get_all_file(self.main_file_path)
+        if not self.main_file:
             print('Place the main file in "main_file" directory.')
             sys.exit(1)
 
-        # 比較対象の正しい出力結果がない場合、プログラム終了
-        if self.is_exist_dir(self.correct_result_path):
-            if not Directory.get_all_file(self.correct_result_path):
-                print('Place the correct result file in "correct_result" directory.')
-                sys.exit(1)
-        else:
-            Process.make_directory(self.correct_result_path)
-            print('make directory "correct_result_dir"')
+        # 比較対象の正しい出力結果がない場合、プログラム終了。
+        if not Directory.get_all_file(self.correct_result_path):
             print('Place the correct result file in "correct_result" directory.')
             sys.exit(1)
 
-        if self.is_exist_dir(self.xls_path):
-            if not Directory.get_all_file(self.xls_path):
-                print('Place the excel file in "xls_file" directory.')
-                sys.exit(1)
-        else:
-            Process.make_directory(self.xls_path)
-            print('make directory "xls_file"')
+        # xlsファイルがない場合、プログラム終了。
+        if not Directory.get_all_file(self.xls_path):
             print('Place the excel file in "xls_file" directory.')
             sys.exit(1)
 
