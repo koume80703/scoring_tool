@@ -30,7 +30,9 @@ class Test:
                 )
 
     def test_file(self, pathname: str, elapsed_file: str, output_file=None) -> None:
-        if output_file is not None:
+        if output_file is not None and os.path.isfile(
+            os.path.join(pathname, output_file)
+        ):
             with open(os.path.join(pathname, output_file), "r") as txt:
                 output = txt.read().splitlines()
             if len(output) > 0 and output[0] == "grep error":
