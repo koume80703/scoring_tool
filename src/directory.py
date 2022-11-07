@@ -93,7 +93,8 @@ class Directory:
         # 実行ファイル名（メインクラスのあるファイル名)を保存する。
         # リストで保存する必要はないかもしれない。
         self.main_file = Directory.get_all_file(self.main_file_path)
-        self.main_file.remove(".DS_Store")
+        if ".DS_Store" in self.main_file:
+            self.main_file.remove(".DS_Store")
         if not self.main_file:
             print('Place the main file in "main_file" directory.')
             sys.exit(1)
