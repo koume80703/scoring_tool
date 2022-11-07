@@ -31,6 +31,10 @@ class Search:
                     elif len(opi) == 3:
                         [option, pattern, inverse] = opi
                         inverse = int(inverse)
+
+                    if option == "":
+                        option = None
+
                     self.search_text(
                         os.path.join(
                             pathname, self.dir.package_name, self.dir.main_file[0]
