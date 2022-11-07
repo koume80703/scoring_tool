@@ -16,10 +16,7 @@ class Scoring:
     学生が提出したファイルを実行し、得られた出力を正しい出力結果と比較し、採点を行うクラス。
     """
 
-    def __init__(
-        self,
-        dir: Directory,
-    ):
+    def __init__(self, dir: Directory):
         self.dir = dir
 
         xls_files = Directory.get_all_file(self.dir.xls_path)
@@ -50,7 +47,6 @@ class Scoring:
     def comp_result(self, identity_num: str, result_path: str) -> None:
         """
         出力結果と正しいものを比較する。
-        比較した結果、一致したものに関しては何もしないが、一致しなかった場合、htmlファイルを生成し、何が異なっているのか検証できるようにした。
         """
 
         # TODO このメソッド外でresult.txtをチェックして出力結果がerrorでないものだけをこのメソッドに通すようにしたい。
@@ -70,7 +66,8 @@ class Scoring:
 
         with open(result_path, "r") as result_text:
             result_text_lines = result_text.readlines()
-        if result_text_lines[0] in ek:
+
+        if len(result_text_lines) > 0 and result_text_lines[0] in ek:
             for i in range(len(ek)):
                 if result_text_lines[0] == ek[i]:
                     with open(output_path, "w") as f:
@@ -129,8 +126,8 @@ def main():
     # lecture_nameはjavalecの何回目にあたるのかを入れれば良い
     # 入力としては"javalecXX"となるような値を期待している
     # このlecture_nameという変数が各学生プロジェクト(ex. 2_14_001)に付随するパッケージ名になる
-    lecture_num = input("Choose number of java lecture: ")
-    lecture_name = "javalec" + lecture_num
+    lecture_num = input("Choose number of object oriented lecture: ")
+    lecture_name = "oolec" + lecture_num
 
     # 実行場所によってこの変数への代入値が異なってしまうので、実行場所はsrcにする必要がある。
     # TODO src以外の場所において実行したとしてもうまく実行できるようにしたい。
@@ -157,6 +154,8 @@ def main():
                 elif len(opi) == 3:
                     [option, pattern, inverse] = opi
                     inverse = int(inverse)
+                if option == "":
+                    option = None
 
                 search.search_text(
                     os.path.join(
@@ -174,6 +173,8 @@ def main():
             test.test_file(
                 os.path.join(test.dir.root_path, student_num), dir.main_file[0]
             )
+        if sys.argv[1] == "--reset":
+            dir.reset_directory()
     else:
         Nkf(dir).encoding_all_file()
 
