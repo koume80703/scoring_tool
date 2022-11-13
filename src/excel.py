@@ -1,5 +1,6 @@
 import re
 import os
+import sys
 import openpyxl as px
 from openpyxl.styles import PatternFill
 
@@ -33,6 +34,10 @@ class Excel:
 
             if (grade, cls, num) == (grade_xls, cls_xls, num_xls):
                 row[7].value = str(score) + "点: " + comment
+                return
+        else:
+            print("Not writen to target cell")
+            sys.exit(1)
 
     def save_workbook(self) -> None:
         """ワークブックを保存するメソッド"""
