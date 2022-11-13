@@ -1,6 +1,7 @@
 import os
 from subprocess import run
-from directory import Directory
+
+from status import Status
 
 
 class Test:
@@ -8,100 +9,96 @@ class Test:
     コンパイルおよび実行を行うクラス
     """
 
-    def __init__(
-        self,
-        dir: Directory,
-        # javacでのコンパイル時やjavaでの実行時にどんな引数で実行したのか表示するかどうか
-        OUTPUT_COMMAND_DETAIL: bool = True,
-    ):
-        self.dir = dir
-        self.COMPILE_COMMAND = "javac"
-        self.EXE_COMMAND = "java"
-        self.ENCODING = "UTF8"
-        self.OUTPUT_DETAIL_COMMAND = OUTPUT_COMMAND_DETAIL
+    COMPILE_COMMAND = "javac"
+    EXE_COMMAND = "java"
+    ENCODING = "UTF8"
+    COMMAND_DETAIL = True
 
-    def test_all_file(self) -> None:
-        print()
-        print("***** Testing all files *****")
-        for pathname, dirnames, filenames in os.walk(self.dir.root_path):
-            if len(dirnames) == 1 and self.dir.package_name in dirnames:
-                self.test_file(
-                    pathname, self.dir.main_file[0], output_file="result.txt"
-                )
+    RESULT_FILE = "result.txt"  # Directoryクラスで生成するtmp/result.txtに一致させる
 
-    def test_file(self, pathname: str, elapsed_file: str, output_file=None) -> None:
-        if output_file is not None and os.path.isfile(
-            os.path.join(pathname, output_file)
-        ):
-            with open(os.path.join(pathname, output_file), "r") as txt:
-                output = txt.read().splitlines()
-            if len(output) > 0 and output[0] == "grep error":
-                print("<< Skipped testing >>")
-                return
+    def __init__(self):
+        pass
 
-        compile_status = self.compile_file(
-            os.path.join(pathname, self.dir.package_name, elapsed_file),
-            classpath=pathname,
+    @classmethod
+    def test_file(
+        cls,
+        path: str,
+        package_name: str,
+        main_file: str,
+        stdout: bool = True,
+    ) -> Status:
+        """コンパイルと実行を行うメソッド
+
+        Args:
+            path (str): tmpディレクトリの絶対パスが入る
+            package_name (str): 指定されたパッケージ名が入る。パスではないことに注意
+            main_file (str): メインファイル名が入る。パスではないことに注意
+            stdout (bool): 実行時に出力を標準出力にするか、ファイルへの出力へするか定めるフラグ
+
+        Returns:
+            Status: _description_
+        """
+
+        compile_status = cls.compile_file(
+            os.path.join(path, package_name, main_file), path
         )
 
         if compile_status == 1:
             print("<javac> was failed. Compile Error.")
-            if output_file is not None:
-                with open(os.path.join(pathname, output_file), "w") as txt:
-                    txt.writelines(["compile error"])
-            return
+            return Status.COMPILE_FAILURE
 
-        exe_status = self.execute_file(
-            os.path.join(self.dir.package_name, os.path.splitext(elapsed_file)[0]),
-            classpath=pathname,
-            output_dir=pathname,
-            output_file=output_file,
+        output_path = None if stdout else os.path.join(path, Test.RESULT_FILE)
+
+        exe_status = cls.execute_file(
+            os.path.join(package_name, os.path.splitext(main_file)[0]),
+            classpath=path,
+            output_path=output_path,
         )
 
         if exe_status == 1:
             print("<java> was failed. Execution Error.")
-            if output_file is not None:
-                with open(os.path.join(pathname, output_file), "w") as txt:
-                    txt.writelines(["execution error"])
-            return
+            return Status.EXECUTION_FAILURE
 
-    def compile_file(self, path: str, classpath: str) -> int:
+        return Status.SUCCESS
+
+    @classmethod
+    def compile_file(cls, path: str, classpath: str) -> int:
         # .javaファイルをコンパイルするメソッド
         cmd = [
-            self.COMPILE_COMMAND,
+            Test.COMPILE_COMMAND,
             "-classpath",
             classpath,
-            "-J-Dfile.encoding=" + self.ENCODING,
+            "-J-Dfile.encoging=" + Test.ENCODING,
             path,
         ]
-        if self.OUTPUT_DETAIL_COMMAND:
+
+        if Test.COMMAND_DETAIL:
             for arg in cmd:
                 print(arg, end=" ")
             print()
         return run(args=cmd).returncode
 
+    @classmethod
     def execute_file(
-        self,
-        class_name: str,
-        classpath: str,
-        output_dir: str = None,
-        output_file: str = None,
+        cls, classname: str, classpath: str, output_path: str = None
     ) -> int:
         # .classファイルを実行するメソッド。
-        # 引数に出力に関連するものがあるが、これらはメソッド呼び出し時に指定されなかった場合、標準出力で実行されるものとなる。指定された場合、"result.txt"というファイルにその実行結果が出力される。
+        # 引数に出力に関連するものがあるが、これらはメソッド呼び出し時に指定されなかった場合、標準出力で実行されるものとなる。
+
         cmd = [
-            self.EXE_COMMAND,
+            Test.EXE_COMMAND,
             "-classpath",
             classpath,
-            "-Dfile.encoding=" + self.ENCODING,
-            class_name,
+            "-Dfile.encoding=" + Test.ENCODING,
+            classname,
         ]
-        if self.OUTPUT_DETAIL_COMMAND:
+
+        if Test.COMMAND_DETAIL:
             for arg in cmd:
                 print(arg, end=" ")
             print()
-        if output_file is None:
+        if output_path is None:
             return run(args=cmd).returncode
         else:
-            with open(os.path.join(output_dir, output_file), "w") as txt:
+            with open(output_path, "w") as txt:
                 return run(args=cmd, stdout=txt).returncode

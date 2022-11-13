@@ -1,6 +1,5 @@
 import os
 import sys
-import re
 
 from process import Process
 
@@ -18,8 +17,7 @@ class Directory:
         necessary_dir: str = "necessary_files",
         main_file_dir: str = "main_file",
         correct_result_dir: str = "correct_result",
-        diff_result_dir: str = "diff_result",
-        illegal_patterns_dir: str = "illegal_patterns",
+        patterns_dir: str = "patterns",
         xls_dir: str = "xls_file",
     ):
         self.workspace_path = workspace_path
@@ -34,15 +32,16 @@ class Directory:
         self.necessary_path = os.path.join(self.etc_path, necessary_dir)
         self.main_file_path = os.path.join(self.etc_path, main_file_dir)
         self.correct_result_path = os.path.join(self.etc_path, correct_result_dir)
-        self.diff_result_path = os.path.join(self.etc_path, diff_result_dir)
-        self.illegal_patterns_path = os.path.join(self.etc_path, illegal_patterns_dir)
+        self.patterns_path = os.path.join(self.etc_path, patterns_dir)
         self.xls_path = os.path.join(self.etc_path, xls_dir)
 
-    def tidy_dir(self) -> None:
+        self.check_dir_structure()
+
+    def check_dir_structure(self):
         """
-        ディレクトリ構造を整理するメソッドで、これを行うことでJavaコンパイルおよび実行を可能としている。
-        project_path以下に提出されたファイルを全て配置することでそれらを対応するパッケージに移動させる。
-        また、課題をやるにあたって事前に与えられたファイルについてはパッケージをプログラム実行前に作成することで自動で各パッケージに配置させることができる。パッケージ名は"necessary_files"とする。
+        ディレクトリ構造をチェックするメソッド。
+        ディレクトリetc以下に必要なディレクトリが存在するか確認し、なければそれを生成する。
+        なお、etcがそもそも存在しない場合、etcも生成する。
         """
 
         # etcディレクトリがない場合、ディレクトリを作成してプログラム終了する。
@@ -51,23 +50,17 @@ class Directory:
             pass
         else:
             Process.make_directory(self.etc_path)
-            print("Run this program again.")
-            sys.exit(1)
+            print('make directory "etc"')
 
         # サブファイルのディレクトリが無い場合、作成する。
         if not self.is_exist_dir(self.necessary_path):
             Process.make_directory(self.necessary_path)
             print('make directory "necessary_files"')
 
-        # 比較結果の出力先ディレクトリがない場合、作成する。
-        if not self.is_exist_dir(self.diff_result_path):
-            Process.make_directory(self.diff_result_path)
-            print('make directory "diff_result"')
-
         # grep用のパターンディレクトリが無い場合、作成する。
-        if not self.is_exist_dir(self.illegal_patterns_path):
-            Process.make_directory(self.illegal_patterns_path)
-            print('make directory "illegal_patterns"')
+        if not self.is_exist_dir(self.patterns_path):
+            Process.make_directory(self.patterns_path)
+            print('make directory "patterns"')
 
         # 実行ファイル名のあるディレクトリが無い場合、作成する。
         if not self.is_exist_dir(self.main_file_path):
@@ -84,20 +77,15 @@ class Directory:
             Process.make_directory(self.xls_path)
             print('make directory "xls_file"')
 
-        # 実行に必要な他ファイル名を保存する。
-        self.necessary_files = Directory.get_all_file(self.necessary_path)
-
-        # grepにて検出したいパターンを保存する。
-        self.illegal_patterns = Directory.get_all_file(self.illegal_patterns_path)
-
         # 実行ファイル名（メインクラスのあるファイル名)を保存する。
-        # リストで保存する必要はないかもしれない。
-        self.main_file = Directory.get_all_file(self.main_file_path)
-        if ".DS_Store" in self.main_file:
-            self.main_file.remove(".DS_Store")
-        if not self.main_file:
+        files = Directory.get_all_file(self.main_file_path)
+        if ".DS_Store" in files:
+            files.remove(".DS_Store")
+        if not files:
             print('Place the main file in "main_file" directory.')
             sys.exit(1)
+        if len(files) == 1:
+            self.main_file = files[0]
 
         # 比較対象の正しい出力結果がない場合、プログラム終了。
         if not Directory.get_all_file(self.correct_result_path):
@@ -109,128 +97,83 @@ class Directory:
             print('Place the excel file in "xls_file" directory.')
             sys.exit(1)
 
-        if self.is_exist_dir(self.root_path):
-            java_files = Directory.get_all_file(self.root_path)
-            for f in java_files:
-                file_name = os.path.splitext(os.path.basename(f))[0]
+    def generate_tmp_dir(self) -> None:
+        """
+        javacにてコンパイルするにあたって、ディレクトリ構造を整理する必要があるので、一時的なディレクトリtmpを生成し、それをプロジェクトパスとして、tmp配下でコンパイル及び実行を行う。
+        """
 
-                # macにおいて.DS_Storeというファイルが生成されることがあり、これを処理の対象外とするための処理
-                extension = os.path.splitext(os.path.basename(f))[1]
-                if extension != ".java":
-                    print("Illegal file type:", os.path.basename(f))
-                    continue
+        self.tmp_path = os.path.join(self.root_path, "tmp")
+        Process.make_directory(self.tmp_path)
 
-                # パッケージ上部のディレクトリ名を"学年_組_番号"とした
-                # このディレクトリは学生の名前を示すテキストファイルを含む
-                identify_num = "_".join(re.findall(r"\d+", file_name)[1:4])
-                student_name = file_name.split("_")[3]
+        self.package_path = os.path.join(self.tmp_path, self.package_name)
+        Process.make_directory(self.package_path)
 
-                # パッケージ名を.javaファイル上で指定されたものにする必要があるが、各学生ごとに実行すべきファイル群が違うので一旦各学生ごとに異なるディレクトリを生成し、その中に指定されたパッケージ名のディレクトリを生成することで.javaファイルの実行を可能としている。
-                Process.make_directory(os.path.join(self.root_path, identify_num))
-                Process.make_directory(
-                    os.path.join(self.root_path, identify_num, self.package_name)
-                )
-                Process.make_text(
-                    student_name,
-                    os.path.join(self.root_path, identify_num, "student_name.txt"),
-                )
-                Process.make_text(
-                    os.path.basename(f),
-                    os.path.join(
-                        self.root_path, identify_num, "original_file_name.txt"
-                    ),
-                )
-                if len(self.main_file) >= 1:
-                    Process.rename_file(
-                        os.path.join(self.root_path, f), self.main_file[0]
-                    )
-                    Process.move_file(
-                        self.main_file[0],
-                        os.path.join(self.root_path, identify_num, self.package_name),
-                    )
+        necessary_files = Directory.get_all_file(self.necessary_path)
+        for nf in necessary_files:
+            Process.copy_file(
+                os.path.join(self.necessary_path, nf),
+                os.path.join(self.tmp_path, self.package_name),
+            )
 
-                if self.necessary_files:
-                    for nf in self.necessary_files:
-                        Process.copy_file(
-                            os.path.join(self.root_path, self.necessary_path, nf),
-                            os.path.join(
-                                self.root_path, identify_num, self.package_name
-                            )
-                            + "/",
-                        )
-        else:
-            print(self.root_path, "was not existed. Input correct path.")
-            sys.exit(1)
+        self.tmp_result_path = os.path.join(self.tmp_path, "result.txt")
+        Process.touch_file(self.tmp_result_path)
+
+        self.tmp_original_name_path = os.path.join(
+            self.tmp_path, "original_file_name.txt"
+        )
+        Process.touch_file(self.tmp_original_name_path)
+
+    def move_main_file(self, target_path: str) -> None:
+        """
+        テスト対象のソースをプロジェクトディレクトリ配下に配置し、適切なファイル名に変更する。
+
+        Args:
+            target_path (str): テスト対象のソースの絶対パス。
+        """
+
+        target_file_name = os.path.basename(target_path)
+
+        Process.make_text(target_file_name, self.tmp_original_name_path)
+
+        Process.move_file(target_path, self.package_path)
+
+        Process.rename_file(
+            os.path.join(self.package_path, target_file_name),
+            os.path.join(self.package_path, self.main_file),
+        )
+
+    def replace_main_file(self) -> None:
+        """
+        採点終了後、メインファイルを元に戻すメソッド。ファイル名も元に戻す。
+        """
+        with open(self.tmp_original_name_path) as f:
+            original_file_name = f.read().splitlines()[0]
+
+        Process.rename_file(
+            os.path.join(self.package_path, self.main_file),
+            os.path.join(self.package_path, original_file_name),
+        )
+
+        Process.move_file(
+            os.path.join(self.package_path, original_file_name), self.root_path
+        )
+
+    def remove_tmp_dir(self) -> None:
+        """
+        tmpディレクトリを削除するメソッド
+        """
+        Process.remove_dir(self.tmp_path)
+
+        del self.tmp_path
+        del self.package_path
+        del self.tmp_result_path
+        del self.tmp_original_name_path
 
     def is_exist_dir(self, path) -> bool:
         """
         与えられたpathが存在するか返すメソッド
         """
         return os.path.isdir(path)
-
-    def reset_directory(self) -> None:
-        """
-        root_path以下の全てのディレクトリを削除し、全てのファイルをroot_path以下に配置する。
-        主にデバック時に用いるメソッド。
-        """
-
-        for pathname, dirnames, filenames in os.walk(self.root_path):
-            if not self.is_student_dir(pathname):
-                continue
-            print(pathname)
-            for f in filenames:
-                if f.endswith(".java"):
-                    if f == self.main_file[0]:
-                        with open(
-                            os.path.join(
-                                os.path.dirname(pathname), "original_file_name.txt"
-                            ),
-                            "r",
-                        ) as txt:
-                            original_file_name = txt.readline().replace("\n", "")
-                            Process.rename_file(
-                                os.path.join(pathname, self.main_file[0]),
-                                os.path.join(pathname, original_file_name),
-                            )
-                            Process.move_file(
-                                os.path.join(pathname, original_file_name),
-                                self.root_path,
-                            )
-
-        for pathname, dirnames, filenames in os.walk(self.root_path):
-            for d in dirnames:
-                if not self.is_student_dir(os.path.join(pathname, d)):
-                    continue
-                Process.remove_file(os.path.join(self.root_path, d), option="-r")
-            else:
-                break
-
-        sys.exit(0)
-
-    def is_student_dir(self, path: str) -> bool:
-        """
-        デバッグ用のメソッドreset_directoryに用いるメソッド。
-        各学生ディレクトリ以外のディレクトリに対して、処理を行わないためのメソッド。
-        与えられたpathが学生用ディレクトリかどうか判断するメソッド。
-        """
-        if path == self.necessary_path:
-            return False
-        if path == self.necessary_path:
-            return False
-        if path == self.correct_result_path:
-            return False
-        if path == self.diff_result_path:
-            return False
-        if path == self.xls_path:
-            return False
-        if path == self.etc_path:
-            return False
-        if path == self.main_file_path:
-            return False
-        if path == self.illegal_patterns_path:
-            return False
-
-        return True
 
     @classmethod
     def remove_classes(cls, path: str) -> list:

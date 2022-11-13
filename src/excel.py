@@ -1,12 +1,9 @@
-from operator import index
 import re
 import os
 import openpyxl as px
 from openpyxl.styles import PatternFill
 
 from directory import Directory
-
-from typing import Optional
 
 
 class Excel:
@@ -16,21 +13,29 @@ class Excel:
 
         self.worksheet = self.workbook.worksheets[0]
 
-    def write_score(self, scores: list[tuple[Optional[int]]]) -> None:
+    def write_score(
+        self, grade: int, cls: int, num: int, score: int, comment: str
+    ) -> None:
+        """指定のエクセルファイルに採点結果を書き込むメソッド
+
+        Args:
+            grade (int): 採点対象の学年
+            cls (int): 採点対象のクラス
+            num (int): 採点対象の番号
+            score (int): 点数
+            comment (str): コメント
+        """
+
         for row in self.worksheet.iter_rows(min_row=2):
-            grade = int(row[1].value)
-            cls = int(row[2].value)
-            num = int(row[3].value)
+            grade_xls = int(row[1].value)
+            cls_xls = int(row[2].value)
+            num_xls = int(row[3].value)
 
-            student = (grade, cls, num)
+            if (grade, cls, num) == (grade_xls, cls_xls, num_xls):
+                row[7].value = str(score) + "点: " + comment
 
-            for sc in scores:
-                if (sc[0], sc[1], sc[2]) == student:
-                    if sc[3] is None:
-                        row[7].value = "採点結果を入力。エラーあり。"
-                    elif sc[3] == 10:
-                        row[7].value = "10点: よくできています。"
-                    scores.remove(sc)
+    def save_workbook(self) -> None:
+        """ワークブックを保存するメソッド"""
 
         self.workbook.save(self.wb_path)
 

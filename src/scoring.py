@@ -1,14 +1,14 @@
-import difflib
 import os
 import sys
-
-from typing import Optional
+import re
 
 from search import Search
 from directory import Directory
 from excel import Excel
 from test import Test
 from nkf import Nkf
+from comparing import Compare
+from status import Status
 
 
 class Scoring:
@@ -16,175 +16,125 @@ class Scoring:
     学生が提出したファイルを実行し、得られた出力を正しい出力結果と比較し、採点を行うクラス。
     """
 
-    def __init__(self, dir: Directory):
-        self.dir = dir
+    LECTURE_KIND = ["javalec", "oolec"]
+
+    # この採点ツールがどの講義におけるものなのか指定する。
+    CHOOSED_LECTURE = LECTURE_KIND[1]
+
+    def __init__(self, exe_stdout: bool = False):
+        # lecture_nameはjavalec(oolec)の何回目にあたるのかを入れれば良い
+        # 入力としては"javalecXX(oolecXX)"となるような値を期待している
+
+        if self.CHOOSED_LECTURE == self.LECTURE_KIND[0]:
+            lecture_num = input("Choose number of java lecture: ")
+        elif self.CHOOSED_LECTURE == self.LECTURE_KIND[1]:
+            lecture_num = input("Choose number of object oriented lecture: ")
+
+        # 採点対象の実行時に出力を標準出力にするか、ファイルに出力するかのフラグ変数
+        # Trueの場合、ファイル出力がないので、正答との比較が行われない。
+        self.EXE_STDOUT = exe_stdout
+
+        lecture_name = self.CHOOSED_LECTURE + lecture_num
+        workspace_path = os.path.dirname(os.getcwd())
+
+        self.dir = Directory(workspace_path, lecture_name)
 
         xls_files = Directory.get_all_file(self.dir.xls_path)
         for xf in xls_files:
             if os.path.splitext(os.path.basename(xf))[1] == ".xlsx":
                 xls_file = xf
+                break
 
         self.excel = Excel(os.path.join(self.dir.xls_path, xls_file))
 
-    def comp_all_result(self) -> None:
-        """
-        全ての出力結果に対して、正しい出力結果との比較を行うメソッド
-        """
+    def get_status(self, path: str) -> Status:
+        status = Search.search_for_all_patterns(path, self.dir.patterns_path)
 
-        # 学生番号以下のパッケージ名を用いて探索しているので、変数名がややこしくならないようにpackage_nameという変数にしている。
-        # self.dir.lecture_nameを用いても問題はない
-        package_name = self.dir.lecture_name
-        result_file_name = "result.txt"
-        print()
-        print("***** Comparing all files *****")
-        for pathname, dirnames, filenames in os.walk(self.dir.root_path):
-            if len(dirnames) == 1 and package_name in dirnames:
-                self.comp_result(
-                    os.path.basename(pathname),
-                    os.path.join(pathname, result_file_name),
-                )
+        if status == Status.GREP_FAILURE:
+            print("***** Detected grep error *****")
+            return Status.GREP_FAILURE
 
-    def comp_result(self, identity_num: str, result_path: str) -> None:
-        """
-        出力結果と正しいものを比較する。
-        """
+        self.dir.generate_tmp_dir()
+        self.dir.move_main_file(path)
 
-        # TODO このメソッド外でresult.txtをチェックして出力結果がerrorでないものだけをこのメソッドに通すようにしたい。
-        # 比較以外の処理を含んでいるので、それらをメソッド外に記述すべき。
-
-        # result_pathは正しい結果に対して比較したいテキストファイルのパス
-        # identity_numは比較対象のファイルがどの学生のものかを示す番号。学年_クラス_番号という形式で与えられる。
-
-        diff = difflib.Differ()
-
-        output_file = "diff_" + identity_num
-        output_path = os.path.join(
-            os.path.join(self.dir.diff_result_path, output_file),
+        status = Test.test_file(
+            self.dir.tmp_path,
+            self.dir.package_name,
+            self.dir.main_file,
+            self.EXE_STDOUT,
         )
 
-        ek = ["compile error", "execution error", "grep error"]
+        if status == Status.COMPILE_FAILURE:
+            print("***** Detected compile error *****")
+            return Status.COMPILE_FAILURE
+        elif status == Status.EXECUTION_FAILURE:
+            print("***** Detected execution error *****")
+            return Status.EXECUTION_FAILURE
 
-        with open(result_path, "r") as result_text:
-            result_text_lines = result_text.readlines()
-
-        if len(result_text_lines) > 0 and result_text_lines[0] in ek:
-            for i in range(len(ek)):
-                if result_text_lines[0] == ek[i]:
-                    with open(output_path, "w") as f:
-                        print(identity_num, ek[i])
-                        f.writelines(ek[i])
+        # Testクラスにおける出力がファイル出力ではない場合、出力と正答の比較ができないため、比較ステップは飛ばす。
+        if self.EXE_STDOUT:
+            pass
         else:
-            correct_result_text_list = Directory.get_all_file(
-                self.dir.correct_result_path
+            status = Compare.compare_to_all_answer(
+                self.dir.tmp_result_path, self.dir.correct_result_path
             )
 
-            for correct_result_text in correct_result_text_list:
-                with open(
-                    os.path.join(self.dir.correct_result_path, correct_result_text),
-                    "r",
-                ) as crt:
-                    crt_lines = crt.readlines()
-                    output_diff = diff.compare(crt_lines, result_text_lines)
-                for i in output_diff:
-                    if i[0] in ["+", "-"]:
-                        break
-                else:
-                    break
+        self.dir.replace_main_file()
+        self.dir.remove_tmp_dir()
 
-            for i in output_diff:
-                if i[0] in ["+", "-"]:
-                    with open(output_path, "w") as f:
-                        print(identity_num, "diff")
-                        f.writelines(["diff"])
-                    break
-            else:
-                with open(output_path, "w") as f:
-                    print(identity_num, "ok")
-                    f.writelines(["ok"])
+        if status == Status.COMPARING_FAILURE:
+            print("***** Detected comparing error *****")
+            return Status.COMPARING_FAILURE
 
-    def scoring(self):
-        self.comp_all_result()
+        return Status.SUCCESS
 
-        diff_result_names = Directory.get_all_file(self.dir.diff_result_path)
-        scores = []
-        for dr in diff_result_names:
-            _, grade, cls, num = dr.split("_")
+    def scoring_all(self, write_excel: bool = True):
+        pass
+
+    def scoring(self, path: str, write_excel: bool = False) -> None:
+        # pathは採点対象のソースコードの絶対パス
+        # この地点で、ファイル名はoh-meijiから落としたもののままであるので、javacでのコンパイルはできない。メインクラス名とファイル名が一致しないため。
+
+        # UTF-8に変更
+        Nkf.encoding(path)
+
+        status = self.get_status(path)
+
+        if write_excel:
+            filename = os.path.splitext(os.path.basename(path))[0]
+            [grade, cls, num] = re.findall(r"\d+", filename.split("_")[2])
+
             grade, cls, num = int(grade), int(cls), int(num)
-            with open(os.path.join(self.dir.diff_result_path, dr), "r") as f:
-                if f.readline() == "ok":
-                    scores.append((grade, cls, num, 10))
-                else:
-                    scores.append((grade, cls, num, None))
 
-        self.write_score(scores)
-
-    def write_score(self, scores: list[(int, int, int, Optional[int])]) -> None:
-        self.excel.write_score(scores)
+            if status == Status.SUCCESS:
+                self.excel.write_score(grade, cls, num, 10, "よくできています。")
+            elif status == Status.GREP_FAILURE:
+                self.excel.write_score(
+                    grade, cls, num, 99, "想定したパターンが見つかりません。もしくは、不適切なパターンがあります。要確認。"
+                )
+            elif status == Status.COMPILE_FAILURE or status == Status.EXECUTION_FAILURE:
+                self.excel.write_score(grade, cls, num, 0, "実行できませんでした。")
+            elif status == Status.COMPARING_FAILURE:
+                self.excel.write_score(grade, cls, num, 99, "出力結果が間違っています。要確認。")
+            else:
+                print("Error: Illegal value in variable <status>")
+                sys.exit(1)
+        else:
+            print(status)
 
 
 def main():
-    # lecture_nameはjavalecの何回目にあたるのかを入れれば良い
-    # 入力としては"javalecXX"となるような値を期待している
-    # このlecture_nameという変数が各学生プロジェクト(ex. 2_14_001)に付随するパッケージ名になる
-    lecture_num = input("Choose number of object oriented lecture: ")
-    lecture_name = "oolec" + lecture_num
-
-    # 実行場所によってこの変数への代入値が異なってしまうので、実行場所はsrcにする必要がある。
-    # TODO src以外の場所において実行したとしてもうまく実行できるようにしたい。
-    workspace_path = os.path.dirname(os.getcwd())
-
-    dir = Directory(workspace_path, lecture_name)
-    dir.tidy_dir()
+    scoring = Scoring()
 
     if len(sys.argv) != 1:
         if sys.argv[1] == "-t":
-            student_num = sys.argv[2]
-
-            search = Search(dir)
-            for pattern_file in dir.illegal_patterns:
-                with open(
-                    os.path.join(dir.illegal_patterns_path, pattern_file), "r"
-                ) as p:
-                    lines = p.read().splitlines()
-
-                opi = lines[0].split(",")
-                if len(opi) == 2:
-                    [option, pattern] = opi
-                    inverse = 0
-                elif len(opi) == 3:
-                    [option, pattern, inverse] = opi
-                    inverse = int(inverse)
-                if option == "":
-                    option = None
-
-                search.search_text(
-                    os.path.join(
-                        dir.root_path,
-                        student_num,
-                        dir.package_name,
-                        dir.main_file[0],
-                    ),
-                    pattern,
-                    option=option,
-                    inverse=inverse,
-                )
-
-            test = Test(dir)
-            test.test_file(
-                os.path.join(test.dir.root_path, student_num), dir.main_file[0]
-            )
-        if sys.argv[1] == "--reset":
-            dir.reset_directory()
+            [grade, cls, num] = sys.argv[2].split("_")
+            all_files = Directory.get_all_file(scoring.dir.root_path)
+            for f in all_files:
+                if str(grade) + "年" + str(cls) + "組" + str(num) + "番" in f:
+                    scoring.scoring(os.path.join(scoring.dir.root_path, f))
     else:
-        Nkf(dir).encoding_all_file()
-
-        Search(dir).search_all_file()
-
-        Test(dir).test_all_file()
-
-        Directory.remove_classes(dir.root_path)
-
-        Scoring(dir).scoring()
+        scoring.scoring_all(write_excel=True)
 
 
 if __name__ == "__main__":

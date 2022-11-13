@@ -10,20 +10,26 @@ class Process:
     def __init__(self):
         pass
 
-    @classmethod
-    def make_directory(cls, dir_path: str) -> int:
+    @staticmethod
+    def make_directory(dir_path: str) -> int:
         # ディレクトリを作成するメソッド
         cmd = ["mkdir", dir_path]
         return run(args=cmd).returncode
 
-    @classmethod
-    def move_file(cls, file_path: str, dest_path: str) -> int:
+    @staticmethod
+    def touch_file(file_path: str) -> int:
+        # ファイルを生成するコマンド
+        cmd = ["touch", file_path]
+        return run(args=cmd).returncode
+
+    @staticmethod
+    def move_file(file_path: str, dest_path: str) -> int:
         # ファイルを移動するメソッド
         cmd = ["mv", file_path, dest_path]
         return run(args=cmd).returncode
 
-    @classmethod
-    def copy_file(cls, file_path: str, dest_path: str) -> int:
+    @staticmethod
+    def copy_file(file_path: str, dest_path: str) -> int:
         # 指定のパスにファイルをコピーするメソッド
         # 主に、事前配布のファイルを各パッケージにコピーするのに用いる
         cmd = [
@@ -33,21 +39,21 @@ class Process:
         ]
         return run(args=cmd).returncode
 
-    @classmethod
-    def make_text(cls, text: str, output_path: str) -> int:
+    @staticmethod
+    def make_text(text: str, output_path: str) -> int:
         # テキストファイルを作成し、それを指定のディレクトリに出力するメソッド
         with open(output_path, "w") as txt:
             cmd = ["echo", text]
             return run(args=cmd, stdout=txt).returncode
 
-    @classmethod
-    def rename_file(cls, file_path: str, renamed_path: str) -> int:
+    @staticmethod
+    def rename_file(file_path: str, renamed_path: str) -> int:
         # ファイル名を書き換えるメソッド
         cmd = ["mv", file_path, renamed_path]
         return run(args=cmd).returncode
 
-    @classmethod
-    def remove_file(cls, path: str, option: str = None) -> int:
+    @staticmethod
+    def remove_file(path: str, option: str = None) -> int:
         # ファイルを削除するメソッド
         if option is None:
             cmd = ["rm", path]
@@ -56,8 +62,18 @@ class Process:
 
         return run(args=cmd).returncode
 
-    @classmethod
-    def grep(cls, path: str, pattern: str, option: str = None) -> int:
+    @staticmethod
+    def remove_dir(path: str, option: str = None) -> int:
+        # ディレクトリを削除するメソッド
+        if option is None:
+            cmd = ["rm", "-r", path]
+        else:
+            cmd = ["rm", "-r", option, path]
+
+        return run(args=cmd).returncode
+
+    @staticmethod
+    def grep(path: str, pattern: str, option: str = None) -> int:
         if option is None:
             cmd = ["grep", pattern, path]
         else:
@@ -70,19 +86,8 @@ class Process:
 
         return run(args=cmd).returncode
 
-    # @classmethod
-    # def grep_pipe(cls, path, patterns: list[str]) -> int:
-    #     cmd = "grep"
-    #     cmd += " " + patterns[0] + " " + path
-    #     for i in range(1, len(patterns)):
-    #         cmd += " | grep " + patterns[i]
-
-    #     print(cmd)
-
-    #     return run(args=cmd, shell=True).returncode
-
-    @classmethod
-    def nkf(cls, path, ctype: str = "utf-8") -> int:
+    @staticmethod
+    def nkf(path, ctype: str = "utf-8") -> int:
         if ctype == "utf-8":
             cmd = ["nkf", "-w", "--overwrite", path]
         else:
