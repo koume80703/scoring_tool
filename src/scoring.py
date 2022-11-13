@@ -86,10 +86,18 @@ class Scoring:
             print("***** Detected comparing error *****")
             return Status.COMPARING_FAILURE
 
+        print("***** Correct submitted file *****")
         return Status.SUCCESS
 
     def scoring_all(self, write_excel: bool = True):
-        pass
+        all_files = Directory.get_all_file(self.dir.root_path)
+        for file in all_files:
+            if os.path.splitext(file)[1] == ".java":
+                print("#" * 7, file, "#" * 7)
+                self.scoring(os.path.join(self.dir.root_path, file), write_excel)
+            else:
+                print("#" * 7, "Illegal file was detected:", file, "#" * 7)
+            print()
 
     def scoring(self, path: str, write_excel: bool = False) -> None:
         # pathは採点対象のソースコードの絶対パス
@@ -119,6 +127,7 @@ class Scoring:
             else:
                 print("Error: Illegal value in variable <status>")
                 sys.exit(1)
+            self.excel.save_workbook()
         else:
             print(status)
 
@@ -133,6 +142,10 @@ def main():
             for f in all_files:
                 if str(grade) + "年" + str(cls) + "組" + str(num) + "番" in f:
                     scoring.scoring(os.path.join(scoring.dir.root_path, f))
+        if sys.argv[1] == "--debug":
+            scoring.dir.generate_tmp_dir()
+            scoring.dir.replace_main_file()
+            scoring.dir.remove_tmp_dir()
     else:
         scoring.scoring_all(write_excel=True)
 
