@@ -29,6 +29,9 @@ class Scoring:
             lecture_num = input("Choose number of java lecture: ")
         elif self.CHOOSED_LECTURE == self.LECTURE_KIND[1]:
             lecture_num = input("Choose number of object oriented lecture: ")
+        if not lecture_num.isdecimal():
+            print("Invalid input. Not Decimal. Input was '" + lecture_num + "'")
+            sys.exit(1)
 
         # 採点対象の実行時に出力を標準出力にするか、ファイルに出力するかのフラグ変数
         # Trueの場合、ファイル出力がないので、正答との比較が行われない。
@@ -48,6 +51,15 @@ class Scoring:
         self.excel = Excel(os.path.join(self.dir.xls_path, xls_file))
 
     def get_status(self, path: str) -> Status:
+        """採点結果のステータスを返すメソッド。
+
+        Args:
+            path (str): 採点対象の絶対パス。
+
+        Returns:
+            Status: 採点する上で、文句のないソースであれば、Status.SUCCESSを返す。
+                    要件を満たしていない場合は、満たしていない要件に応じて返す値が変わる。
+        """
         status = Search.search_for_all_patterns(path, self.dir.patterns_path)
 
         if status == Status.GREP_FAILURE:
@@ -100,8 +112,12 @@ class Scoring:
             print()
 
     def scoring(self, path: str, write_excel: bool = False) -> None:
-        # pathは採点対象のソースコードの絶対パス
-        # この地点で、ファイル名はoh-meijiから落としたもののままであるので、javacでのコンパイルはできない。メインクラス名とファイル名が一致しないため。
+        """採点メソッド。
+
+        Args:
+            path (str): 採点対象の絶対パス
+            write_excel (bool, optional): エクセルに採点結果を出力するかどうかのフラグ。 Defaults to False.
+        """
 
         # UTF-8に変更
         Nkf.encoding(path)
@@ -133,20 +149,38 @@ class Scoring:
 
 
 def main():
-    scoring = Scoring()
-
     if len(sys.argv) != 1:
-        if sys.argv[1] == "-t":
+        if sys.argv[1] == "-s":
+            scoring = Scoring()
             [grade, cls, num] = sys.argv[2].split("_")
             all_files = Directory.get_all_file(scoring.dir.root_path)
             for f in all_files:
                 if str(grade) + "年" + str(cls) + "組" + str(num) + "番" in f:
                     scoring.scoring(os.path.join(scoring.dir.root_path, f))
+        if sys.argv[1] == "-t":
+            scoring = Scoring(exe_stdout=True)
+            [grade, cls, num] = sys.argv[2].split("_")
+            all_files = Directory.get_all_file(scoring.dir.root_path)
+            for f in all_files:
+                if str(grade) + "年" + str(cls) + "組" + str(num) + "番" in f:
+                    scoring.dir.generate_tmp_dir()
+                    scoring.dir.move_main_file(os.path.join(scoring.dir.root_path, f))
+
+                    Test.test_file(
+                        scoring.dir.tmp_path,
+                        scoring.dir.package_name,
+                        scoring.dir.main_file,
+                        scoring.EXE_STDOUT,
+                    )
+
+                    scoring.dir.replace_main_file()
+                    scoring.dir.remove_tmp_dir()
         if sys.argv[1] == "--debug":
             scoring.dir.generate_tmp_dir()
             scoring.dir.replace_main_file()
             scoring.dir.remove_tmp_dir()
     else:
+        scoring = Scoring()
         scoring.scoring_all(write_excel=True)
 
 
