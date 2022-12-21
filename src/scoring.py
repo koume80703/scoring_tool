@@ -163,6 +163,7 @@ def main():
             all_files = Directory.get_all_file(scoring.dir.root_path)
             for f in all_files:
                 if str(grade) + "年" + str(cls) + "組" + str(num) + "番" in f:
+                    print(os.path.join(scoring.dir.root_path, f))
                     scoring.dir.generate_tmp_dir()
                     scoring.dir.move_main_file(os.path.join(scoring.dir.root_path, f))
 
