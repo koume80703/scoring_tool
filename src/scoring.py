@@ -78,9 +78,13 @@ class Scoring:
 
         if status == Status.COMPILE_FAILURE:
             print("***** Detected compile error *****")
+            self.dir.replace_main_file()
+            self.dir.remove_tmp_dir()
             return Status.COMPILE_FAILURE
         elif status == Status.EXECUTION_FAILURE:
             print("***** Detected execution error *****")
+            self.dir.replace_main_file()
+            self.dir.remove_tmp_dir()
             return Status.EXECUTION_FAILURE
 
         # Testクラスにおける出力がファイル出力ではない場合、出力と正答の比較ができないため、比較ステップは飛ばす。
@@ -163,7 +167,9 @@ def main():
             all_files = Directory.get_all_file(scoring.dir.root_path)
             for f in all_files:
                 if str(grade) + "年" + str(cls) + "組" + str(num) + "番" in f:
+                    # vscodeにて採点対象ファイルへクリックでアクセスするための出力
                     print(os.path.join(scoring.dir.root_path, f))
+
                     scoring.dir.generate_tmp_dir()
                     scoring.dir.move_main_file(os.path.join(scoring.dir.root_path, f))
 
