@@ -58,6 +58,7 @@ class Search:
             bool: 要件を満たさない場合、Falseを返す。
         """
 
+        # grepコマンドの戻り値は、マッチした行があれば0、なければ1を返す。
         grep_status = Process.grep(path, pattern, option=option) - inverse
 
         if grep_status == 0:
