@@ -19,7 +19,7 @@ class Scoring:
     LECTURE_KIND = ["javalec", "oolec"]
 
     # この採点ツールがどの講義におけるものなのか指定する。
-    CHOOSED_LECTURE = LECTURE_KIND[1]
+    CHOOSED_LECTURE = LECTURE_KIND[0]
 
     def __init__(self, exe_stdout: bool = False):
         # lecture_nameはjavalec(oolec)の何回目にあたるのかを入れれば良い
